@@ -94,10 +94,17 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
 
 
     # Create H matrix with periodic boundary conditions.
+    H = make_tridiagonal(nspace, 1, -2, 1)  # Tridiagonal matrix
+    # Adding potential
+    if not V: # if potential is empty
+        pass
+    else: # if potential has values in the array
+        for v in V:
+            H = np.where(H[v, :] == -2, 1, H)
 
-    B = make_tridiagonal(nspace, -1, 0, 1)  # Tridiagonal matrix
-    B[0, -1] = -1   # Top right for BC
-    B[-1, 0] = 1  # Bottom left for BC
+    
+    H[0, -1] = -1   # Top right for BC
+    H[-1, 0] = 1  # Bottom left for BC
 
 
     #method.
