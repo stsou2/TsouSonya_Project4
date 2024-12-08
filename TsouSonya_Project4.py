@@ -64,7 +64,7 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
         max_value = max(abs(eigenvalues))
         
         return max_value
-
+    
     def make_gaussIC(sigma_0, k_0, x_0, x_i):
         """
         Function initialize Gaussian wave packet function for free particle IC.
