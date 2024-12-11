@@ -87,11 +87,11 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     # Extract parameters
     L = length # The system extends from x=-L/2 to x=L/2
     V = potential
-    h = L/(nspace)       # Grid spacing for periodic boundary conditions
+    h = L/(nspace) # Grid spacing for periodic boundary conditions
 
-    #tau_crit = h / c # critical time step
-    #tau = tau_rel * tau_crit
-
+    # constants
+    hbar = 1
+    m = 0.5
 
     # Create H matrix with periodic boundary conditions.
     H = make_tridiagonal(nspace, 1, -2, 1)  # Tridiagonal matrix
@@ -100,15 +100,14 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
         pass
     else: # if potential has values in the array
         for v in V:
-            H = np.where(H[v, :] == -2, 1, H)
-
-    
-    H[0, -1] = -1   # Top right for BC
+            Vx = 1* ((h**2)*2*m)/(-hbar**2) # accounting for coefficient
+            H = np.where(H[v, :] == -2, Vx, H) 
+    H[0, -1] = 1   # Top right for BC
     H[-1, 0] = 1  # Bottom left for BC
-
-
-    #method.
-    if method == 1 :      ### FTCS method ###
+    
+    # methods  -referring to Eqn 9.32 and 9.40 in the textbook
+    A = np.eye(nspace) - (c * tau / (2 * h)) * B
+    if method == 1 :
         # A is needed to understand how a evolves over time
         A = np.eye(nspace) - (c * tau / (2 * h)) * B #also reffering to p.220
 
