@@ -1,5 +1,4 @@
 import numpy as np
-import scipy as sc
 import matplotlib.pyplot as plt
 
 def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wparam = [10, 0, 0.5]):
@@ -166,7 +165,7 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     # psi plot
     if type == 'psi':
         ax.plot(x_grid, psi[:, t_index])
-        ax.set(xlabel = 'x', ylabel = 'psi(x)', title = f'Plot of Schroedinger Wavefunction at Time t={t_label)}', grid = True)
+        ax.set(xlabel = 'x', ylabel = 'psi(x)', title = f'Plot of Schroedinger Wavefunction at Time t={t_label}', grid = True)
     # prob plot
     elif type == 'prob':
         ax.plot(x_grid, prob[:, t_index])
@@ -184,6 +183,6 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     else:
         pass
 
-
     return
+
 
