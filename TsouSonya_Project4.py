@@ -121,15 +121,13 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     else:
         print("Solution will be stable.")
     
-    # returns are a x and t
-
     # creating spatial and time grids
     x_grid = np.linspace(-L/2, L/2, nspace, endpoint=False)  # spatial grid from -L/2 to L/2
     t_grid = np.arange(0,ntime) * tau  # time grid 
     
     # Initializing psi
     psi = np.zeros((nspace, ntime))
-    psi[:, 0] = make_gaussIC(x_i=x_grid)  # InC
+    psi[:, 0] = make_gaussIC(x_i=x_grid)  # IC
 
     for n in range(1, ntime):
         psi[:,n] = np.dot(A, psi[:,n-1])
@@ -144,11 +142,11 @@ def sch_plot(sch_arrays, type = 'psi', save = False):
     Plots output of sch_eqn().
 
     Args:
-    sch_arrays (1x3 array): array of sch_eqn outputs; 
-        either [psi, x_grid, t_grid] OR [prob, x_grid, t_grid] depending on desired plot type
+    outputs (1x4 tuple): tuple of sch_eqn outputs (psi, x_grid, t_grid, prob) 
     type (str): type of plot, either 'psi' (plot of the real part of ψ(x) at time t)
         or 'prob' (plot of the particle probability density ψ ψ*(x) at a specific time). Defaults to psi
     save (bool): Option to save to file. Defaults to False
     '''
-
+    
     return
+
