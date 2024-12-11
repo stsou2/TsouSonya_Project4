@@ -91,9 +91,7 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     ### Create H matrix with periodic boundary conditions.
 
     # Tridiagonal matrix
-    # For the given values of hbar and m, the coeff works out to just -1/h**2
-    # but I am putting the full thing in for clarity
-    H = (-hbar**2/(2*m*h**2))*make_tridiagonal(nspace, 1, -2, 1)  
+    H = make_tridiagonal(nspace, 1, -2, 1)  
 
     # Adding potential
     if not V: # if potential is empty
@@ -103,6 +101,11 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
             H[v, v] = 1* ((h**2)*2*m)/(-hbar**2) # accounting for coefficient; index known because on main diagonal
     H[0, -1] = 1   # Top right corner = b (in tridiagonal) for BC
     H[-1, 0] = 1  # Bottom left corner = a (in tridiagonal) for BC
+
+    # fixing coefficient
+    # For the given values of hbar and m, the coeff works out to just -1/h**2
+    # but I am putting the full thing in for clarity. Factored elsewhere as appropriate
+    H = (-hbar**2/(2*m*h**2))*H
     
     # methods  -referring to Eqns 9.32 and 9.40 in the textbook
     if method == 'ftcs': # FTCS method
@@ -137,16 +140,50 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
 
     return psi, x_grid, t_grid, prob
 
-def sch_plot(sch_arrays, type = 'psi', save = False):
+def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     '''
     Plots output of sch_eqn().
 
     Args:
     outputs (1x4 tuple): tuple of sch_eqn outputs (psi, x_grid, t_grid, prob) 
+    time (float-like): time (in seconds) at which plot is desired. May be approximated.
     type (str): type of plot, either 'psi' (plot of the real part of ψ(x) at time t)
         or 'prob' (plot of the particle probability density ψ ψ*(x) at a specific time). Defaults to psi
+    plotshow (bool): Option to display the plot. Defaults to True
     save (bool): Option to save to file. Defaults to False
     '''
+    psi = np.real(sch_arrays[0]) #taking real only
+    x_grid = sch_arrays[1]
+    t_grid = sch_arrays[2]
+    prob = sch_arrays[3]
+
+    ### Match given time to closest match in time grid, rounding down 
+    t_index = np.searchsorted(t_grid, time, side = 'left') # left side means t_grid[i-1] < time <= t_grid[i], ie rounding down
     
+    ### Plotting
+    fig, ax = plt.subplots()
+    t_label = np.round(t_grid[t_index], 2)
+    # psi plot
+    if type == 'psi':
+        ax.plot(x_grid, psi[:, t_index])
+        ax.set(xlabel = 'x', ylabel = 'psi(x)', title = f'Plot of Schroedinger Wavefunction at Time t={t_label)}', grid = True)
+    # prob plot
+    elif type == 'prob':
+        ax.plot(x_grid, prob[:, t_index])
+        ax.set(xlabel = 'x', ylabel = f'P(x, t={t_label})', title = f'Probability Density at Time t={t_label}', grid = True)
+    else:
+        raise ValueError("Please choose either 'psi' or 'prob' as type.")
+
+    if plotshow == True:
+        plt.show()
+    else:
+        pass
+
+    if save == True:
+        plt.savefig(f"sch_plot_{type}.png")
+    else:
+        pass
+
+
     return
 
