@@ -24,46 +24,41 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     '''
     # From Lab 10:
     def make_tridiagonal(N, b, d, a):
-        """
-        Creates a tridiagonal matrix of size N x N with with d on the diagonal, b one below
-        the diagonal, and a, one above.
+        '''
+        Creates a tri-diagonal matrix.
+
+        Args:
         
-        Parameters:
-            N: The size of the matrix (N x N).
-            b: The value for the diagonal below the main diagonal.
-            d: The value for the main diagonal.
-            a : The value for the diagonal above the main diagonal.
+        N (int): number of rows/cols for square matrix
+        b (float): value of one below the diagonal
+        d (float): value of the diagonal
+        a (float): value of one above the diagonal
         
         Returns:
-            A tridiagonal matrix with the given parameters.
-        """
         
-        #main diagonal
-        A = d * np.eye(N)
-        #below diagonal
-        A += b * np.eye(N, k=-1)
-        #above diagonal
-        A += a * np.eye(N, k=1)
-        
+        A (array): NxN matrix with d on the diagonal, b one below 
+        the diagonal, and a, one above'''
+
+        A = np.eye(N,k=1)*a + np.eye(N)*d + np.eye(N,k=-1)*b
         return A
 
     def spectral_radius(A):
-        """Calculates the maxium absolute eigenvalue of a 2-D array A
-
+        '''
+        Computes the eigenvalues of an input 2-D array A and returns the eigenvalue with greatest magnitude
+        
         Args:
-            A : 2D array from part 1
+
+        A (array): 2D square input array
 
         Returns:
-            maximum absolute value of eigenvalues
-        """    
         
-        #determine the eigenvalues, only get that value from the tuple
-        eigenvalues, _ = np.linalg.eig(A)
-        
-        #determine the maxiumum absolute value
-        max_value = max(abs(eigenvalues))
-        
-        return max_value
+        lambda_max (float): eigenvalue with greatest magnitude
+        '''
+
+        (l,m) = np.linalg.eig(A)
+        lambda_max = l[np.argmax(abs(l))]
+
+        return lambda_max
     
     def make_gaussIC(sigma_0, k_0, x_0, x_i):
         """
@@ -84,7 +79,7 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     
     # From Lab 11
     
-    # Extract parameters
+    ### parameters
     L = length # The system extends from x=-L/2 to x=L/2
     V = potential
     h = L/(nspace) # Grid spacing for periodic boundary conditions
@@ -93,38 +88,33 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     hbar = 1
     m = 0.5
 
-    # Create H matrix with periodic boundary conditions.
-    H = make_tridiagonal(nspace, 1, -2, 1)  # Tridiagonal matrix
+    ### Create H matrix with periodic boundary conditions.
+
+    # Tridiagonal matrix
+    # For the given values of hbar and m, the coeff works out to just -1/h**2
+    # but I am putting the full thing in for clarity
+    H = (-hbar**2/(2*m*h**2))*make_tridiagonal(nspace, 1, -2, 1)  
+
     # Adding potential
     if not V: # if potential is empty
         pass
     else: # if potential has values in the array
         for v in V:
-            Vx = 1* ((h**2)*2*m)/(-hbar**2) # accounting for coefficient
-            H = np.where(H[v, :] == -2, Vx, H) 
-    H[0, -1] = 1   # Top right for BC
-    H[-1, 0] = 1  # Bottom left for BC
+            H[v, v] = 1* ((h**2)*2*m)/(-hbar**2) # accounting for coefficient; index known because on main diagonal
+    H[0, -1] = 1   # Top right corner = b (in tridiagonal) for BC
+    H[-1, 0] = 1  # Bottom left corner = a (in tridiagonal) for BC
     
-    # methods  -referring to Eqn 9.32 and 9.40 in the textbook
-    A = np.eye(nspace) - (c * tau / (2 * h)) * B
-    if method == 1 :
-        # A is needed to understand how a evolves over time
-        A = np.eye(nspace) - (c * tau / (2 * h)) * B #also reffering to p.220
-
-    elif  method == 2 :   ### Lax method ###
-        # need C: as in the fomula there is 1/2 C let's set C with this 1/2 already inside (with 0.5 instead of 1)
-        C = make_tridiagonal(nspace, 0.5, 0, 0.5)
-
-        # BC
-        C[0, -1] = 0.5  # First row, last element
-        C[-1, 0] = 0.5  # Last row, first element
-        A = C - (c * tau / (2 * h)) * B
-
+    # methods  -referring to Eqns 9.32 and 9.40 in the textbook
+    if method == 'ftcs': # FTCS method
+        A = np.eye(nspace) - (1j*tau/hbar)*H
+    
+    elif  method == 'crank': # Crank-Nicolson method
+        A = np.linalg.inv(np.eye(nspace) + (1j*tau/hbar)*H)*(np.eye(nspace) - (1j*tau/hbar)*H)
+      
     else:
-        raise ValueError("Invalid method. Please type 1 for 'FTCS' or  2 for'Lax'.")
+        raise ValueError("Invalid method. Please enter either 'ftcs' or 'crank' as the method param.")
     
-    # Sonya
-    # Stability
+    ### Stability
     eigenval = spectral_radius(A)
     if eigenval-1 > 1e-10:
         print("Solution will be unstable.")
