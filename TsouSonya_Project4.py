@@ -82,8 +82,10 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     # variable
     L = length # The system extends from x=-L/2 to x=L/2
     V = potential
-    h = L/(nspace - 1) # Grid spacing for periodic boundary conditions
-    sigma_0 = wparam[0]
+    nspace = nspace - 1 # Technically there are nspace - 1 points to calculate;
+    # >> in light of not changing every single proceeding nspace variable I just did this to fix it
+    h = L/(nspace) # Grid spacing for periodic boundary conditions
+    sigma0 = wparam[0]
     x0 = wparam[1]
     k0 = wparam[2]
 
@@ -136,7 +138,9 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     
     # Initializing psi
     psi = np.zeros((nspace, ntime))
-    psi[:, 0] = make_gaussIC(sigma_0, x0, k0, x_i=x_grid)  # IC
+    psi[:, 0] = make_gaussIC(sigma0, k0, x0, x_i=x_grid)  # IC
+    TESTOUTPUT = psi[:,0]
+
 
     for n in range(1, ntime):
         psi[:,n] = np.dot(A, psi[:,n-1])
@@ -144,7 +148,7 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     # Finding prob, ie psi times psi_conjugate
     prob = psi * np.conjugate(psi)
 
-    return psi, x_grid, t_grid, prob
+    return psi, x_grid, t_grid, prob, TESTOUTPUT
 
 def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     '''
@@ -193,5 +197,4 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
 
     return
 
-sch_plot(sch_arrays=sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'ftcs', length = 100), time = 0)
-
+sch_plot(sch_arrays=sch_eqn(nspace = 29, ntime = 500, tau = 1.0, method = 'crank', length = 100), time = 0)
