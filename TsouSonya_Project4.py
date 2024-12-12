@@ -73,15 +73,19 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
         gaussIC: Gaussian wave packet function for psi(x, t=0)
 
         """
-        gaussIC = (1/(np.sqrt(sigma_0*np.sqrt(np.pi))))*(np.exp(1j*k_0*x_i))*(np.exp(-(x_i-x_0)**2)/(2*sigma_0**2))
+        gaussIC = (1/(np.sqrt(sigma_0*np.sqrt(np.pi))))*(np.exp(1j*k_0*x_i))*np.exp((-(x_i-x_0)**2)/(2*sigma_0**2))
         return gaussIC
     
     # From Lab 11
     
     ### parameters
+    # variable
     L = length # The system extends from x=-L/2 to x=L/2
     V = potential
-    h = L/(nspace) # Grid spacing for periodic boundary conditions
+    h = L/(nspace - 1) # Grid spacing for periodic boundary conditions
+    sigma_0 = wparam[0]
+    x0 = wparam[1]
+    k0 = wparam[2]
 
     # constants
     hbar = 1
@@ -122,14 +126,17 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
         print("Solution will be unstable.")
     else:
         print("Solution will be stable.")
-    
+
+
+    ### Solving
+         
     # creating spatial and time grids
     x_grid = np.linspace(-L/2, L/2, nspace, endpoint=False)  # spatial grid from -L/2 to L/2
     t_grid = np.arange(0,ntime) * tau  # time grid 
     
     # Initializing psi
     psi = np.zeros((nspace, ntime))
-    psi[:, 0] = make_gaussIC(x_i=x_grid)  # IC
+    psi[:, 0] = make_gaussIC(sigma_0, x0, k0, x_i=x_grid)  # IC
 
     for n in range(1, ntime):
         psi[:,n] = np.dot(A, psi[:,n-1])
@@ -158,21 +165,22 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
 
     ### Match given time to closest match in time grid, rounding down 
     t_index = np.searchsorted(t_grid, time, side = 'left') # left side means t_grid[i-1] < time <= t_grid[i], ie rounding down
-    
+
     ### Plotting
     fig, ax = plt.subplots()
     t_label = np.round(t_grid[t_index], 2)
     # psi plot
     if type == 'psi':
         ax.plot(x_grid, psi[:, t_index])
-        ax.set(xlabel = 'x', ylabel = 'psi(x)', title = f'Plot of Schroedinger Wavefunction at Time t={t_label}', grid = True)
+        ax.set(xlabel = 'x', ylabel = 'psi(x)', title = f'Plot of Schroedinger Wavefunction psi(x) at Time t={t_label}')
     # prob plot
     elif type == 'prob':
         ax.plot(x_grid, prob[:, t_index])
-        ax.set(xlabel = 'x', ylabel = f'P(x, t={t_label})', title = f'Probability Density at Time t={t_label}', grid = True)
+        ax.set(xlabel = 'x', ylabel = f'P(x, t={t_label})', title = f'Probability Density at Time t={t_label}')
     else:
         raise ValueError("Please choose either 'psi' or 'prob' as type.")
-
+    
+    plt.grid(True)
     if plotshow == True:
         plt.show()
     else:
@@ -185,4 +193,5 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
 
     return
 
+sch_plot(sch_arrays=sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'ftcs', length = 100), time = 0)
 
