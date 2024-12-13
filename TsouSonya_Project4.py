@@ -82,7 +82,7 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     # variable
     L = length # The system extends from x=-L/2 to x=L/2
     V = potential
-    nspace = nspace - 1 # Technically there are nspace - 1 points to calculate;
+    #nspace = nspace - 1 # Technically there are nspace - 1 points to calculate;
     # >> in light of not changing every single proceeding nspace variable I just did this to fix it
     h = L/(nspace) # Grid spacing for periodic boundary conditions
     sigma0 = wparam[0]
@@ -103,28 +103,31 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
         pass
     else: # if potential has values in the array
         for v in V:
-            H[v, v] = 1* ((h**2)*2*m)/(-hbar**2) # accounting for coefficient; index known because on main diagonal
+            H[v, v] = 1* ((h**2)*2*m)/(-(hbar**2)) # accounting for coefficient; index known because on main diagonal
     H[0, -1] = 1   # Top right corner = b (in tridiagonal) for BC
     H[-1, 0] = 1  # Bottom left corner = a (in tridiagonal) for BC
 
     # fixing coefficient
     # For the given values of hbar and m, the coeff works out to just -1/h**2
     # but I am putting the full thing in for clarity. Factored elsewhere as appropriate
-    H = (-hbar**2/(2*m*h**2))*H
-    
+    coeff = ((-hbar**2)/(2*m*h**2))
+
     # methods  -referring to Eqns 9.32 and 9.40 in the textbook
     if method == 'ftcs': # FTCS method
-        A = np.eye(nspace) - (1j*tau/hbar)*H
+        A = np.eye(nspace) - (1j*tau/hbar)*coeff*H
     
     elif  method == 'crank': # Crank-Nicolson method
-        A = np.linalg.inv(np.eye(nspace) + (1j*tau/hbar)*H)*(np.eye(nspace) - (1j*tau/hbar)*H)
-      
+        A = np.matmul(np.linalg.inv(np.eye(nspace) + ((1j*tau)/(2*hbar))*coeff*H), (np.eye(nspace) - ((1j*tau)/(2*hbar))*coeff*H))
+    
     else:
         raise ValueError("Invalid method. Please enter either 'ftcs' or 'crank' as the method param.")
     
+    
+    #print(A)
     ### Stability
     eigenval = spectral_radius(A)
-    if eigenval-1 > 1e-10:
+    # Must find abs value.
+    if abs(eigenval)-1 > 1e-10:
         print("Solution will be unstable.")
     else:
         print("Solution will be stable.")
@@ -133,22 +136,23 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
     ### Solving
          
     # creating spatial and time grids
-    x_grid = np.linspace(-L/2, L/2, nspace, endpoint=False)  # spatial grid from -L/2 to L/2
-    t_grid = np.arange(0,ntime) * tau  # time grid 
+    x_grid = np.linspace(-L/2, L/2, nspace, endpoint=True)  # spatial grid from -L/2 to L/2
+    t_grid = np.arange(0, ntime) * tau  # time grid 
     
     # Initializing psi
-    psi = np.zeros((nspace, ntime))
+    psi = np.zeros((nspace, ntime), dtype=complex)
     psi[:, 0] = make_gaussIC(sigma0, k0, x0, x_i=x_grid)  # IC
-    TESTOUTPUT = psi[:,0]
-
 
     for n in range(1, ntime):
-        psi[:,n] = np.dot(A, psi[:,n-1])
+        psi[:,n] = np.matmul(A, psi[:,n-1])
 
-    # Finding prob, ie psi times psi_conjugate
-    prob = psi * np.conjugate(psi)
+    # Finding total prob, ie psi times psi_conjugate
+    prob = np.zeros(ntime, dtype = complex)
+    prob = np.sum(psi * np.conjugate(psi), axis=0)
+    
+    return psi, x_grid, t_grid, prob
 
-    return psi, x_grid, t_grid, prob, TESTOUTPUT
+
 
 def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     '''
@@ -156,7 +160,7 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
 
     Args:
     outputs (1x4 tuple): tuple of sch_eqn outputs (psi, x_grid, t_grid, prob) 
-    time (float-like): time (in seconds) at which plot is desired. May be approximated.
+    time (float-like): time point in grid at which plot is desired. May be approximated.
     type (str): type of plot, either 'psi' (plot of the real part of ψ(x) at time t)
         or 'prob' (plot of the particle probability density ψ ψ*(x) at a specific time). Defaults to psi
     plotshow (bool): Option to display the plot. Defaults to True
@@ -165,9 +169,9 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     psi = np.real(sch_arrays[0]) #taking real only
     x_grid = sch_arrays[1]
     t_grid = sch_arrays[2]
-    prob = sch_arrays[3]
+    prob = sch_arrays[0]*np.conjugate(sch_arrays[0])
 
-    ### Match given time to closest match in time grid, rounding down 
+    ### Match given time ooint to closest match in time grid, rounding down 
     t_index = np.searchsorted(t_grid, time, side = 'left') # left side means t_grid[i-1] < time <= t_grid[i], ie rounding down
 
     ### Plotting
@@ -185,6 +189,7 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
         raise ValueError("Please choose either 'psi' or 'prob' as type.")
     
     plt.grid(True)
+
     if plotshow == True:
         plt.show()
     else:
@@ -197,4 +202,20 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
 
     return
 
-sch_plot(sch_arrays=sch_eqn(nspace = 29, ntime = 500, tau = 1.0, method = 'crank', length = 100), time = 0)
+#print(sch_eqn(nspace = 30, ntime = 500, tau = 1.0, method = 'ftcs', length = 100)[3])
+sch_plot(sch_arrays=sch_eqn(nspace = 30, ntime = 500, tau = 1.0, method = 'ftcs', length = 100), time = 10, type = 'psi')
+
+
+# fig, ax = plt.subplots()
+
+# #for i in np.linspace(0, 500, 6, endpoint = True):
+# for i in [0, 10]:
+#     psi, x_grid, t_grid, prob =sch_eqn(nspace = 100, ntime = 500, tau = 1.0, method = 'crank', length = 100)
+#     psi = np.real(psi) #taking real only
+#     ### Plotting
+#     ax.plot(x_grid, psi[:, i], label = 'i')
+
+# plt.legend()
+# plt.show()
+
+
