@@ -77,6 +77,9 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
         return gaussIC
     
 
+    # Checking dtype of nspace and ntime, which must be integers.
+    
+
     # Taken from Lab 11, and textbook: Numerical Methods for Physics, Second Edition, Revised (Python) by Alejandro L. Garcia (2017)
 
     ### Parameters
@@ -152,7 +155,7 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
 
 
 
-def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
+def sch_plot(sch_arrays, time = 0, type = 'psi', figure = None, plotshow = True, save = False):
     '''
     Plots output of sch_eqn().
 
@@ -161,6 +164,7 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     time (float-like): time (s) at which plot is desired. May be approximated.
     type (str): type of plot, either 'psi' (plot of the real part of ψ(x) at time t)
         or 'prob' (plot of the particle probability density ψ ψ*(x) at a specific time). Defaults to psi
+    ax (var): what figure/axis to plot it on, if a specific one is desired. Defaults to None, i.e. will create a new fig instance
     plotshow (bool): Option to display the plot. Defaults to True
     save (bool): Option to save to file. Defaults to False
     '''
@@ -178,6 +182,11 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
         pass
 
     ### Plotting
+    if not figure:
+        pass
+    else:
+        fig = figure
+
     fig, ax = plt.subplots()
     t_label = np.round(t_grid[t_index], 2)
     # psi plot
@@ -191,7 +200,6 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     else:
         raise ValueError("Please choose either 'psi' or 'prob' as type.")
     
-    plt.grid(True)
 
     if plotshow == True:
         plt.show()
@@ -199,14 +207,35 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
         pass
 
     if save == True:
-        plt.savefig(f"sch_plot_{type}.png")
+        savename = input("Please input name to save plot as, alphanumeric chars only:    ")
+        if savename.isalnum() == True:
+            fig.savefig(f"{savename}.png")
+        else:
+            raise ValueError("Please input alphanumeric chars only.")
     else:
         pass
 
     return
 
 
+# # Sample call
+# for plott in ['psi', 'prob']:
+#     sch_plot(sch_arrays=sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank', length = 200, potential = [0]), time = 132.678, type = plott, plotshow=False, save=True)
 
-# Sample call
-for plott in ['psi', 'prob']:
-    sch_plot(sch_arrays=sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank', length = 200, potential = []), time = 132.678, type = plott)
+
+from matplotlib import animation as animation
+fig, ax2 = plt.subplots()
+psi, x_grid, t_grid, _ = sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank', length = 200, potential = [0])
+y, = ax2.plot(x_grid, psi[:, 0])
+
+
+def update(frame):
+    # for each frame, update the data stored on each artist.
+
+    y.set_ydata(psi[:, frame])
+    return (y)
+
+# return animation
+ani = animation.FuncAnimation(fig=fig, func=update, frames=500, interval=1)
+plt.show()
+
