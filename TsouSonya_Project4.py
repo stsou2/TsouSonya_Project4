@@ -77,9 +77,6 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
         return gaussIC
     
 
-    # Checking dtype of nspace and ntime, which must be integers.
-    
-
     # Taken from Lab 11, and textbook: Numerical Methods for Physics, Second Edition, Revised (Python) by Alejandro L. Garcia (2017)
 
     ### Parameters
@@ -155,7 +152,7 @@ def sch_eqn(nspace, ntime, tau, method='ftcs', length=200, potential = [], wpara
 
 
 
-def sch_plot(sch_arrays, time = 0, type = 'psi', figure = None, plotshow = True, save = False):
+def sch_plot(sch_arrays, time = 0, type = 'psi', plotshow = True, save = False):
     '''
     Plots output of sch_eqn().
 
@@ -164,9 +161,11 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', figure = None, plotshow = True,
     time (float-like): time (s) at which plot is desired. May be approximated.
     type (str): type of plot, either 'psi' (plot of the real part of ψ(x) at time t)
         or 'prob' (plot of the particle probability density ψ ψ*(x) at a specific time). Defaults to psi
-    ax (var): what figure/axis to plot it on, if a specific one is desired. Defaults to None, i.e. will create a new fig instance
     plotshow (bool): Option to display the plot. Defaults to True
     save (bool): Option to save to file. Defaults to False
+
+    Returns:
+    None
     '''
     psi = np.real(sch_arrays[0]) #taking real only
     x_grid = sch_arrays[1]
@@ -180,12 +179,6 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', figure = None, plotshow = True,
         raise ValueError("Given time outside solved range.")
     else:
         pass
-
-    ### Plotting
-    if not figure:
-        pass
-    else:
-        fig = figure
 
     fig, ax = plt.subplots()
     t_label = np.round(t_grid[t_index], 2)
@@ -218,24 +211,45 @@ def sch_plot(sch_arrays, time = 0, type = 'psi', figure = None, plotshow = True,
     return
 
 
+
+### sch_eqn examples
+
+# # Sample plot
+# import matplotlib.pyplot as plt
+# psi, x_grid, _, _ = sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank')
+# plt.plot(x_grid, psi[:, 0])
+# plt.title('Psi(x) at t=0, Crank')
+# plt.ylabel('Psi(x)')
+# plt.xlabel('x')
+# plt.show()
+
+# # Sample animation
+# import matplotlib.pyplot as plt
+# from matplotlib import animation as animation
+
+# fig, ax2 = plt.subplots(2, 1, figsize = (8, 16))
+# psi, x_grid, _, _ = sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank', potential = [0])
+# probability = psi*np.conjugate(psi) # Probability density calculation
+
+# ax2[0].set(title = 'Psi(x)')
+# ax2[1].set(title = 'Probability Density Function')
+
+# psi_plot, = ax2[0].plot(x_grid, psi[:, 0])
+# prob_plot, = ax2[1].plot(x_grid, probability[:, 0])
+
+# def update(frame):
+#     psi_plot.set_ydata(psi[:, frame])
+#     prob_plot.set_ydata(probability[:, frame])
+#     return (psi_plot, prob_plot)
+
+# ani = animation.FuncAnimation(fig=fig, func=update, frames=500, interval=1)
+# plt.show()
+
+
+### sch_plot examples
+
 # # Sample call
-# for plott in ['psi', 'prob']:
-#     sch_plot(sch_arrays=sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank', length = 200, potential = [0]), time = 132.678, type = plott, plotshow=False, save=True)
+# sch_plot(sch_arrays=sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank'), time = 20, type = 'psi')
+# sch_plot(sch_arrays=sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank'), time = 20, type = 'prob')
 
-
-from matplotlib import animation as animation
-fig, ax2 = plt.subplots()
-psi, x_grid, t_grid, _ = sch_eqn(nspace = 200, ntime = 500, tau = 1.0, method = 'crank', length = 200, potential = [0])
-y, = ax2.plot(x_grid, psi[:, 0])
-
-
-def update(frame):
-    # for each frame, update the data stored on each artist.
-
-    y.set_ydata(psi[:, frame])
-    return (y)
-
-# return animation
-ani = animation.FuncAnimation(fig=fig, func=update, frames=500, interval=1)
-plt.show()
 
